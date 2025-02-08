@@ -1,7 +1,7 @@
 import pandas as pd
 from accounting_date_check import accounting_date_check
 from board_filter import board_filter
-from pdf_generator import pdf_generator
+from pdf_generator import generate_roster_pdf
 from datetime import datetime, timedelta
 
 
@@ -11,8 +11,8 @@ eligible_service_members = []
 ineligible_service_members = []
 
 
-alpha_roster_path = rf'C:\Users\Trent\Documents\Alpha Roster.xlsx'
-test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
+alpha_roster_path = rf'C:\Users\Gamer\Downloads\Alpha Roster.xlsx'
+test_path = rf'C:\Users\Gamer\Downloads\Alpha Roster.xlsx'
 required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS']
 optional_columns = ['GRADE_PERM_PROJ', 'UIF_CODE', 'UIF_DISPOSITION_DATE']
 pdf_columns = ['FULL_NAME','GRADE', 'DATE_ARRIVED_STATION','DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'DOR', 'TAFMSD', 'ASSIGNED_PAS']
@@ -58,34 +58,8 @@ for index, row in filtered_alpha_roster.iterrows():
             print(f"{row['FULL_NAME']} IS NOT ELIGIBLE.")
             ineligible_service_members.append(index)
 
-        # if column == 'GRADE_PERM_PROJ' and value == cycle:
-        #     print(value)
-
-        #     ineligible_service_members.append(index)
-# print(eligible_service_members)
-# print(len(eligible_service_members))
-# print()
-# print(ineligible_service_members)
-# print(len(ineligible_service_members))
-
 eligible_df = pdf_roster.loc[eligible_service_members]
 ineligible_df = pdf_roster.loc[ineligible_service_members]
 #print(eligible_df)
 print(ineligible_df)
-pdf_generator(ineligible_df)
-
-        # if pd.isna(value) and column != '':
-        #     valid_upload = False
-            # print(rf"error at {index}, {column}")
-
-
-# if valid_upload:
-
-
-
-
-
-# for column in columns:
-#     if column in alpha_roster.columns:
-#         for entry in alpha_roster[column]:
-#             print(entry)
+generate_roster_pdf(eligible_df, ineligible_df, 2025 )
