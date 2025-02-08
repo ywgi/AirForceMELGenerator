@@ -1,0 +1,91 @@
+import pandas as pd
+from accounting_date_check import accounting_date_check
+from board_filter import board_filter
+from pdf_generator import pdf_generator
+from datetime import datetime, timedelta
+
+
+#UIF 1,2,3 - ONLY 2,3 MAKE YOU INELIGIBLE
+
+eligible_service_members = []
+ineligible_service_members = []
+
+
+alpha_roster_path = rf'C:\Users\Trent\Documents\Alpha Roster.xlsx'
+test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
+required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS']
+optional_columns = ['GRADE_PERM_PROJ', 'UIF_CODE', 'UIF_DISPOSITION_DATE']
+pdf_columns = ['FULL_NAME', 'GRADE', 'DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'DATE_ARRIVED_STATION', 'DOR', 'TAFMSD']
+
+boards = ['E5', 'E6', 'E7', 'E8', 'E9']
+grade_map = {
+    "SRA": "E4",
+    "SSG": "E5",
+    "TSG": "E6",
+    "MSG": "E7",
+    "SMS": "E8"
+}
+alpha_roster = pd.read_excel(test_path)
+filtered_alpha_roster = alpha_roster[required_columns + optional_columns]
+pdf_roster = filtered_alpha_roster[pdf_columns]
+valid_upload = True
+
+cycle = 'SSG'
+year = 2025
+
+
+
+for index, row in filtered_alpha_roster.iterrows():
+    for column, value in row.items():
+        if pd.isna(value) and column in required_columns:
+            valid_upload = False
+            print(rf"error at {index}, {column}")
+            break
+    valid_member = accounting_date_check(row['DATE_ARRIVED_STATION'], cycle, year)
+    if not valid_member:
+        print(f"{index} is not a valid member.")
+        continue
+    if row['GRADE_PERM_PROJ'] == cycle:
+        print(f"{row['FULL_NAME']} IS NOT ELIGIBLE.")
+        ineligible_service_members.append(index)
+        continue
+    if row['GRADE'] == cycle:
+        member_status = board_filter(row['GRADE'], year, row['DOR'], row['UIF_CODE'], row['UIF_DISPOSITION_DATE'], row['TAFMSD'], row['REENL_ELIG_STATUS'])
+        if member_status:
+            print(f"{row['FULL_NAME']} IS ELIGIBLE.")
+            eligible_service_members.append(index)
+        else:
+            print(f"{row['FULL_NAME']} IS NOT ELIGIBLE.")
+            ineligible_service_members.append(index)
+
+        # if column == 'GRADE_PERM_PROJ' and value == cycle:
+        #     print(value)
+
+        #     ineligible_service_members.append(index)
+# print(eligible_service_members)
+# print(len(eligible_service_members))
+# print()
+# print(ineligible_service_members)
+# print(len(ineligible_service_members))
+
+eligible_df = pdf_roster.loc[eligible_service_members]
+ineligible_df = pdf_roster.loc[ineligible_service_members]
+#print(eligible_df)
+print(ineligible_df)
+pdf_generator(ineligible_df)
+
+        # if pd.isna(value) and column != '':
+        #     valid_upload = False
+            # print(rf"error at {index}, {column}")
+
+
+# if valid_upload:
+
+
+
+
+
+# for column in columns:
+#     if column in alpha_roster.columns:
+#         for entry in alpha_roster[column]:
+#             print(entry)
