@@ -13,9 +13,9 @@ ineligible_service_members = []
 
 alpha_roster_path = rf'C:\Users\Trent\Documents\Alpha Roster.xlsx'
 test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
-required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS']
+required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS']
 optional_columns = ['GRADE_PERM_PROJ', 'UIF_CODE', 'UIF_DISPOSITION_DATE']
-pdf_columns = ['FULL_NAME', 'GRADE', 'DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'DATE_ARRIVED_STATION', 'DOR', 'TAFMSD']
+pdf_columns = ['FULL_NAME','GRADE', 'DATE_ARRIVED_STATION','DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'DOR', 'TAFMSD', 'ASSIGNED_PAS']
 
 boards = ['E5', 'E6', 'E7', 'E8', 'E9']
 grade_map = {
@@ -25,7 +25,7 @@ grade_map = {
     "MSG": "E7",
     "SMS": "E8"
 }
-alpha_roster = pd.read_excel(test_path)
+alpha_roster = pd.read_excel(alpha_roster_path)
 filtered_alpha_roster = alpha_roster[required_columns + optional_columns]
 pdf_roster = filtered_alpha_roster[pdf_columns]
 valid_upload = True
