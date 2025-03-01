@@ -7,23 +7,52 @@ from reportlab.platypus.flowables import PageBreak
 from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from promotion_eligible_counter import get_promotion_eligibility
+import os
+from PyPDF2 import PdfMerger
 
 # Register Calibri fonts
 pdfmetrics.registerFont(TTFont('Calibri', 'Calibri.ttf'))
 pdfmetrics.registerFont(TTFont('Calibri-Bold', 'Calibrib.ttf'))
 
+promotion_map = {
+    "SRA": "E5",
+    "SSG": "E6",
+    "TSG": "E7",
+    "MSG": "E8",
+    "SMS": "E9"
+}
+
+SCODs = {'SRA': f'31-MAR',
+         'SSG': f'31-JAN',
+         'TSG': f'30-NOV',
+         'MSG': f'30-SEP',
+         'SMS': f'31-JUL'
+         }
+
+
+def get_accounting_date(grade, year):
+    scod = f'{SCODs.get(grade)}-{year}'
+    formatted_scod_date = datetime.strptime(scod, "%d-%b-%Y")
+    accounting_date = formatted_scod_date - relativedelta(days=120 - 1)
+    adjusted_accounting_date = accounting_date.replace(day=3).replace(hour=23, minute=59, second=59)
+    return adjusted_accounting_date.strftime("%d %B %Y")
+
 
 class MilitaryRosterDocument(BaseDocTemplate):
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename, cycle=None, melYear=None, **kwargs):
         super().__init__(filename, **kwargs)
         self.page_width, self.page_height = landscape(letter)
-
+        self.cycle = cycle
+        self.melYear = melYear
         # Define the main content frame - start below header
         content_frame = Frame(
             x1=0.5 * inch,  # left margin
             y1=1.05 * inch,  # bottom margin (increased to make room for footer)
             width=self.page_width - inch,  # width with margins
-            height=self.page_height - 2.98 * inch,  # reduced height to make room for header
+            height=self.page_height - 2.735 * inch,  # reduced height to make room for header
             id='normal'
         )
 
@@ -84,25 +113,29 @@ class MilitaryRosterDocument(BaseDocTemplate):
         canvas.drawString(text_start_x, text_start_y - 2 * line_height, f"FDID: {doc.pas_info['fdid']}")
         canvas.drawString(text_start_x, text_start_y - 3 * line_height, f"SRID MPF: {doc.pas_info['srid mpf']}")
 
-        # Promotion Key Title
-        canvas.setFont('Calibri-Bold', 12)
-        text_start_x = 5 * inch
-        canvas.drawString(text_start_x, title_y, "Promotion Eligibility Data")
+        if not doc.pas_info['pn'] == 'NA':
+            # Promotion Key Title
+            canvas.setFont('Calibri-Bold', 12)
+            text_start_x = 5 * inch
+            canvas.drawString(text_start_x, title_y, "Promotion Eligibility Data")
 
-        # Promotion Key Information
-        canvas.setFont('Calibri-Bold', 10)
-        line_height = 0.2 * inch
-        text_start_y = header_top - 0.1 * inch
-        canvas.drawString(text_start_x, text_start_y, f"PROMOTE NOW: {doc.pas_info['promote now']}")
-        canvas.drawString(text_start_x, text_start_y - line_height, f"MUST PROMOTE: {doc.pas_info['must promote']}")
+            # Promotion Key Information
+            canvas.setFont('Calibri-Bold', 10)
+            line_height = 0.2 * inch
+            text_start_y = header_top - 0.1 * inch
+            canvas.drawString(text_start_x, text_start_y, f"PROMOTE NOW: {doc.pas_info['pn']}")
+            canvas.drawString(text_start_x, text_start_y - line_height, f"MUST PROMOTE: {doc.pas_info['mp']}")
 
-        #Signature Block
+        # Signature Block
         canvas.setFont('Calibri-Bold', 12)
-        text_start_s = 7.8 * inch
+        text_start_s = 7.5 * inch
         line_height_s = 0.2 * inch
-        title_s = header_top - 0.75 * inch
-        canvas.drawString(text_start_s, title_s, "KENNETH B. BEEBE III, Colonel, USAF")
-        canvas.drawString(text_start_s, title_s - line_height_s, "Commander, 51st Maintenance Group")
+        title_s = header_top - 0.5 * inch
+        officer_name = doc.pas_info['fd name']
+        rank = doc.pas_info['rank']
+        title = doc.pas_info['title']
+        canvas.drawString(text_start_s, title_s, f"{officer_name}, {rank}, USAF")
+        canvas.drawString(text_start_s, title_s - line_height_s, title)
 
     def add_footer(self, canvas, doc):
         footer_text = (
@@ -149,7 +182,7 @@ class MilitaryRosterDocument(BaseDocTemplate):
 
         # Left: Date
         canvas.setFont('Calibri-Bold', 12)
-        canvas.drawString(x, bottom_y, "15 March 2024")
+        canvas.drawString(x, bottom_y, datetime.now().strftime('%d %B %Y'))
 
         # Center: CUI and identifier
         cui_text = "CUI"
@@ -157,22 +190,83 @@ class MilitaryRosterDocument(BaseDocTemplate):
         cui_center_x = (self.page_width / 2) - (cui_width / 2)
         canvas.drawString(cui_center_x, bottom_y, cui_text)
 
-        identifier_text = "25E7 - Final MEL"
+        identifier_text = f"{str(self.melYear)[-2:]}{promotion_map[self.cycle]} - Initial MEL"
         identifier_width = stringWidth(identifier_text, 'Calibri-Bold', 12)
         identifier_center_x = (self.page_width / 2) - (identifier_width / 2)
         canvas.drawString(identifier_center_x, bottom_y - 18, identifier_text)
 
         # Right: Page numbers
-        page_text = f"Page {canvas.getPageNumber()} of {doc.page}"
+        page_text = f"Accounting Date: {get_accounting_date(self.cycle, self.melYear)}"
         page_width = stringWidth(page_text, 'Calibri-Bold', 12)
         canvas.drawString(self.page_width - 0.5 * inch - page_width, bottom_y, page_text)
 
 
-def generate_roster_pdf(eligible_df, ineligible_df, cycle, output_filename="military_roster.pdf",
-                        logo_path='images/Air_Force_Personnel_Center.png'):
-    """Generate a military roster PDF from eligible and ineligible DataFrames"""
+def create_table(doc, data, header, table_type=None, count=None):
+    """Create table with optional status row"""
+    table_width = doc.page_width - inch
+    col_widths = [table_width * x for x in [0.22, 0.07, 0.1, 0.08, 0.23, 0.1, 0.1, 0.1]]
+
+    # Prepare table data
+    table_data = [header] + data
+    repeat_rows = 1
+
+    # Add status row if provided
+    if table_type and count is not None:
+        status_row = [[table_type, "", "", "", "", "", "", f"Total: {count}"]]
+        table_data = status_row + table_data
+        repeat_rows = 2
+
+    # Convert hex #17365d to RGB values (23, 54, 93)
+    dark_blue = colors.Color(23 / 255, 54 / 255, 93 / 255)
+
+    table = Table(table_data, repeatRows=repeat_rows, colWidths=col_widths)
+
+    style = [
+        # Header styling (for both status row and column headers)
+        ('BACKGROUND', (0, 0), (-1, repeat_rows - 1), dark_blue),
+        ('TEXTCOLOR', (0, 0), (-1, repeat_rows - 1), colors.white),
+        ('FONTNAME', (0, 0), (-1, repeat_rows - 1), 'Calibri-Bold'),
+        ('FONTSIZE', (0, 0), (-1, repeat_rows - 1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, repeat_rows - 1), 4),
+        ('ROWHEIGHT', (0, 0), (-1, -1), 30),
+
+        # Data rows styling
+        ('FONTNAME', (0, repeat_rows), (-1, -1), 'Calibri'),
+        ('FONTSIZE', (0, repeat_rows), (-1, -1), 10),
+        ('LINEBELOW', (0, 0), (-1, -1), .5, colors.lightgrey),
+
+        # Column alignments
+        ('ALIGN', (0, repeat_rows - 1), (0, -1), 'LEFT'),  # FULL NAME
+        ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
+        ('ALIGN', (2, repeat_rows - 1), (2, repeat_rows - 1), 'CENTER'),  # DAS header
+        ('ALIGN', (2, repeat_rows), (2, -1), 'RIGHT'),  # DAS data
+        ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
+        ('ALIGN', (4, repeat_rows - 1), (4, repeat_rows - 1), 'CENTER'),  # UNIT header
+        ('ALIGN', (4, repeat_rows), (4, -1), 'LEFT'),  # UNIT data
+        ('ALIGN', (5, repeat_rows - 1), (5, repeat_rows - 1), 'CENTER'),  # DOR header
+        ('ALIGN', (5, repeat_rows), (5, -1), 'RIGHT'),  # DOR data
+        ('ALIGN', (6, repeat_rows - 1), (6, -1), 'RIGHT'),  # TAFMSD
+        ('ALIGN', (7, repeat_rows - 1), (7, -1), 'RIGHT'),  # PASCODE
+    ]
+
+    # Add status row styling if present
+    if table_type:
+        style.extend([
+            ('SPAN', (0, 0), (6, 0)),  # Span ELIGIBLE/INELIGIBLE across
+            ('ALIGN', (7, 0), (7, 0), 'RIGHT'),  # Right align the count
+        ])
+
+    table.setStyle(TableStyle(style))
+    return table
+
+
+def generate_pascode_pdf(eligible_data, ineligible_data, cycle, melYear, pascode, pas_info,
+                         output_filename, logo_path):
+    """Generate a PDF for a single pascode"""
     doc = MilitaryRosterDocument(
         output_filename,
+        cycle=cycle,
+        melYear=melYear,
         pagesize=landscape(letter),
         rightMargin=0.5 * inch,
         leftMargin=0.5 * inch,
@@ -182,115 +276,134 @@ def generate_roster_pdf(eligible_df, ineligible_df, cycle, output_filename="mili
 
     # Store additional information
     doc.logo_path = logo_path
-    doc.pas_info = {
-        'srid': '0R173',
-        'fd name': 'BEEBE III, KENNETH B.',
-        'fdid': '0R173FGDF',
-        'srid mpf': '0P',
-        'promote now': '2',
-        'must promote': '3'
-
-    }
+    doc.pas_members = [pas_info]  # Only include this pascode's info
+    doc.pas_info = pas_info  # Set directly
 
     elements = []
     header_row = ['FULL NAME', 'GRADE', 'DAS', 'DAFSC', 'UNIT', 'DOR', 'TAFMSD', 'PASCODE']
+
+    # Create eligible section if there are eligible records
+    if eligible_data:
+        table = create_table(
+            doc,
+            data=eligible_data,
+            header=header_row,
+            table_type="ELIGIBLE",
+            count=len(eligible_data)
+        )
+        elements.append(table)
+
+    # Add page break before ineligible section
+    if ineligible_data:
+        elements.append(PageBreak())
+        table = create_table(
+            doc,
+            data=ineligible_data,
+            header=header_row,
+            table_type="INELIGIBLE",
+            count=len(ineligible_data)
+        )
+        elements.append(table)
+
+    # Build PDF for this pascode
+    doc.build(elements)
+    return output_filename
+
+
+def merge_pdfs(input_pdfs, output_pdf):
+    """Merge multiple PDFs into a single PDF"""
+    merger = PdfMerger()
+
+    # Add each PDF to the merger
+    for pdf in input_pdfs:
+        try:
+            merger.append(pdf)
+        except Exception as e:
+            print(f"Error adding {pdf} to merged document: {e}")
+
+    # Write the merged PDF to output file
+    try:
+        merger.write(output_pdf)
+        merger.close()
+        print(f"Successfully created merged PDF: {output_pdf}")
+    except Exception as e:
+        print(f"Error writing merged PDF: {e}")
+
+
+def generate_roster_pdf(eligible_df, ineligible_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
+                        logo_path='images/Air_Force_Personnel_Center.png'):
+    """Generate a military roster PDF from eligible and ineligible DataFrames by creating separate PDFs for each pascode"""
 
     # Convert DataFrames to lists
     eligible_data = eligible_df.values.tolist()
     ineligible_data = ineligible_df.values.tolist()
 
     # Get unique PASCODEs from both eligible and ineligible data
-    pascodes = set()
+    unique_pascodes = set()
     for row in eligible_data + ineligible_data:
-        pascodes.add(row[7])  # PASCODE is the 8th column
-    unique_pascodes = sorted(list(pascodes))
+        unique_pascodes.add(row[7])  # PASCODE is the 8th column
+    unique_pascodes = sorted(list(unique_pascodes))
 
-    def create_table(data, header, table_type=None, count=None):
-        """Create table with optional status row"""
-        table_width = doc.page_width - inch
-        col_widths = [table_width * x for x in [0.22, 0.07, 0.1, 0.08, 0.23, 0.1, 0.1, 0.1]]
+    # Create a list to store temporary PDF filenames
+    temp_pdfs = []
 
-        # Prepare table data
-        table_data = [header] + data
-        repeat_rows = 1
-
-        # Add status row if provided
-        if table_type and count is not None:
-            status_row = [[table_type, "", "", "", "", "", "", f"Total: {count}"]]
-            table_data = status_row + table_data
-            repeat_rows = 2
-
-        # Convert hex #17365d to RGB values (23, 54, 93)
-        dark_blue = colors.Color(23 / 255, 54 / 255, 93 / 255)
-
-        table = Table(table_data, repeatRows=repeat_rows, colWidths=col_widths)
-
-        style = [
-            # Header styling (for both status row and column headers)
-            ('BACKGROUND', (0, 0), (-1, repeat_rows - 1), dark_blue),
-            ('TEXTCOLOR', (0, 0), (-1, repeat_rows - 1), colors.white),
-            ('FONTNAME', (0, 0), (-1, repeat_rows - 1), 'Calibri-Bold'),
-            ('FONTSIZE', (0, 0), (-1, repeat_rows - 1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, repeat_rows - 1), 4),
-            ('ROWHEIGHT', (0, 0), (-1, -1), 30),
-
-            # Data rows styling
-            ('FONTNAME', (0, repeat_rows), (-1, -1), 'Calibri'),
-            ('FONTSIZE', (0, repeat_rows), (-1, -1), 10),
-            ('LINEBELOW', (0, 0), (-1, -1), .5, colors.lightgrey),
-
-            # Column alignments
-            ('ALIGN', (0, repeat_rows - 1), (0, -1), 'LEFT'),  # FULL NAME
-            ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
-            ('ALIGN', (2, repeat_rows - 1), (2, repeat_rows - 1), 'CENTER'),  # DAS header
-            ('ALIGN', (2, repeat_rows), (2, -1), 'RIGHT'),  # DAS data
-            ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
-            ('ALIGN', (4, repeat_rows - 1), (4, repeat_rows - 1), 'CENTER'),  # UNIT header
-            ('ALIGN', (4, repeat_rows), (4, -1), 'LEFT'),  # UNIT data
-            ('ALIGN', (5, repeat_rows - 1), (5, repeat_rows - 1), 'CENTER'),  # DOR header
-            ('ALIGN', (5, repeat_rows), (5, -1), 'RIGHT'),  # DOR data
-            ('ALIGN', (6, repeat_rows - 1), (6, -1), 'RIGHT'),  # TAFMSD
-            ('ALIGN', (7, repeat_rows - 1), (7, -1), 'RIGHT'),  # PASCODE
-        ]
-
-        # Add status row styling if present
-        if table_type:
-            style.extend([
-                ('SPAN', (0, 0), (6, 0)),  # Span ELIGIBLE/INELIGIBLE across
-                ('ALIGN', (7, 0), (7, 0), 'RIGHT'),  # Right align the count
-            ])
-
-        table.setStyle(TableStyle(style))
-        return table
-
-    # Modify the processing section:
+    # Generate a separate PDF for each pascode
     for pascode in unique_pascodes:
-        # Filter data for current PASCODE
+        # Skip if this pascode is not in the pascode_map
+        if pascode not in pascode_map:
+            print(f"Warning: No info for pascode {pascode}, skipping")
+            continue
+
+        # Filter data for current pascode
         pascode_eligible = [row for row in eligible_data if row[7] == pascode]
         pascode_ineligible = [row for row in ineligible_data if row[7] == pascode]
 
-        # If not first PASCODE, add page break
-        if elements and pascode != unique_pascodes[0]:
-            elements.append(PageBreak())
+        # Skip if there's no data for this pascode
+        if not pascode_eligible and not pascode_ineligible:
+            print(f"No data for pascode {pascode}, skipping")
+            continue
 
-        # Create eligible section if there are eligible records
-        if pascode_eligible:
-            elements.append(create_table(
-                data=pascode_eligible,
-                header=header_row,
-                table_type="ELIGIBLE",
-                count=len(pascode_eligible)
-            ))
+        # Create PAS info for this pascode
+        eligible_candidates = (eligible_df['ASSIGNED_PAS'] == pascode).sum()
+        print(f"Creating PDF for pascode {pascode}: {eligible_candidates} eligible candidates")
+        must_promote, promote_now = get_promotion_eligibility(eligible_candidates, cycle)
+        pas_info = {
+            'srid': pascode_map[pascode][3],
+            'fd name': pascode_map[pascode][0],
+            'rank': pascode_map[pascode][1],
+            'title': pascode_map[pascode][2],
+            'fdid': f'{pascode_map[pascode][3]}{pascode[-4:]}',
+            'srid mpf': pascode[:2],
+            'mp': must_promote,
+            'pn': promote_now
+        }
 
-        # Add page break before ineligible section
-        if pascode_ineligible:
-            elements.append(PageBreak())
-            elements.append(create_table(
-                data=pascode_ineligible,
-                header=header_row,
-                table_type="INELIGIBLE",
-                count=len(pascode_ineligible)
-            ))
+        # Create temporary filename
+        temp_filename = f"temp_{pascode}.pdf"
 
-    # Build PDF
-    doc.build(elements)
+        # Generate PDF for this pascode
+        temp_pdf = generate_pascode_pdf(
+            pascode_eligible,
+            pascode_ineligible,
+            cycle,
+            melYear,
+            pascode,
+            pas_info,
+            temp_filename,
+            logo_path
+        )
+
+        temp_pdfs.append(temp_pdf)
+
+    # Merge all the temporary PDFs into the final output file
+    if temp_pdfs:
+        merge_pdfs(temp_pdfs, output_filename)
+
+        # Clean up temporary files
+        for pdf in temp_pdfs:
+            try:
+                os.remove(pdf)
+            except Exception as e:
+                print(f"Warning: Could not remove temporary file {pdf}: {e}")
+    else:
+        print("No PDFs were generated. Check your data and pascode_map.")
