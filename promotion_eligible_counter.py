@@ -1,15 +1,5 @@
 def get_promotion_eligibility(total_eligible, rank='SrA'):
-    """
-    Determine Promote Now (PN) and Must Promote (MP) based on total eligible personnel.
 
-    Args:
-        total_eligible (int): Total number of eligible personnel
-        rank (str, optional): Rank to look up. Defaults to 'SrA'.
-
-    Returns:
-        tuple: (Promote Now (PN), Must Promote (MP))
-    """
-    # Lookup tables based on the document's Tables 4.7 and 4.8
     sra_table = [
         ((11, 12), (1, 1)),
         ((13, 17), (1, 2)),
@@ -204,43 +194,6 @@ def get_promotion_eligibility(total_eligible, rank='SrA'):
     # If no matching range is found
     return 'NA', 'NA'
 
-
-# Usage in your PDF generation code
-# def add_promotion_eligibility_data(canvas, doc, text_start_x, text_start_y, line_height):
-#     """
-#     Add Promote Now (PN) and Must Promote (MP) data to the PDF
-#
-#     Args:
-#         canvas: ReportLab canvas object
-#         doc: Document object containing PAS information
-#         text_start_x: X-coordinate to start drawing text
-#         text_start_y: Y-coordinate to start drawing text
-#         line_height: Height of each text line
-#     """
-#     try:
-#         # Determine rank based on your document's structure
-#         rank = doc.pas_info.get('rank', 'SrA')
-#         total_eligible = doc.pas_info.get('total_eligible')
-#
-#         # Get PN and MP values
-#         pn, mp = get_promotion_eligibility(total_eligible, rank)
-#
-#         if pn is not None and mp is not None:
-#             # Draw Promote Now and Must Promote lines
-#             canvas.drawString(text_start_x, text_start_y - 4 * line_height, f"Promote Now (PN): {pn}")
-#             canvas.drawString(text_start_x, text_start_y - 5 * line_height, f"Must Promote (MP): {mp}")
-#         else:
-#             # Handle case where no matching range is found
-#             canvas.drawString(text_start_x, text_start_y - 4 * line_height, "PN/MP: No data found")
-#
-#     except Exception as e:
-#         # Log or handle any errors
-#         print(f"Error adding promotion eligibility data: {e}")
-#         canvas.drawString(text_start_x, text_start_y - 4 * line_height, "PN/MP: Error retrieving data")
-
-
-# In your main PDF generation code
-# add_promotion_eligibility_data(canvas, doc, text_start_x, text_start_y, line_height)
 
 mp,pn = get_promotion_eligibility(24, 'SSG')
 print(f'must promote: {mp}')
