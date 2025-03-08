@@ -1,7 +1,7 @@
 import pandas as pd
 from accounting_date_check import accounting_date_check
 from board_filter import board_filter
-from pdf_generator import generate_roster_pdf
+from initial_mel_pdf_generator import generate_roster_pdf
 from datetime import datetime, timedelta
 
 
