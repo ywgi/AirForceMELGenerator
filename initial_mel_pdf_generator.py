@@ -10,6 +10,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from promotion_eligible_counter import get_promotion_eligibility
+from reportlab.pdfbase.pdfmetrics import stringWidth
 import os
 from PyPDF2 import PdfMerger
 
@@ -25,12 +26,13 @@ promotion_map = {
     "SMS": "E9"
 }
 
-SCODs = {'SRA': f'31-MAR',
-         'SSG': f'31-JAN',
-         'TSG': f'30-NOV',
-         'MSG': f'30-SEP',
-         'SMS': f'31-JUL'
-         }
+SCODs = {
+    'SRA': f'31-MAR',
+    'SSG': f'31-JAN',
+    'TSG': f'30-NOV',
+    'MSG': f'30-SEP',
+    'SMS': f'31-JUL'
+    }
 
 
 def get_accounting_date(grade, year):
@@ -150,7 +152,6 @@ class MilitaryRosterDocument(BaseDocTemplate):
         y = 0.75 * inch
 
         # Split footer text into lines
-        from reportlab.pdfbase.pdfmetrics import stringWidth
         words = footer_text.split()
         lines = []
         current_line = []
