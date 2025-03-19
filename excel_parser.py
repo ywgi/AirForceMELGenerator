@@ -2,12 +2,16 @@ import pandas as pd
 from accounting_date_check import accounting_date_check
 from board_filter import board_filter
 from initial_mel_pdf_generator import generate_roster_pdf
+from final_mel_pdf_generator import generate_final_roster_pdf
 from datetime import datetime, timedelta
 
 eligible_service_members = []
+eligible_btz_service_members = []
 ineligible_service_members = []
 
+
 alpha_roster_path = rf'C:\Users\Trent\Documents\Alpha Roster.xlsx'
+a1c_test = rf'C:\Users\Trent\Documents\a1c_test_cases_extended.xlsx'
 test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
 required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS', 'CAFSC']
 optional_columns = ['GRADE_PERM_PROJ', 'UIF_CODE', 'UIF_DISPOSITION_DATE', '2AFSC', '3AFSC', '4AFSC']
@@ -54,10 +58,12 @@ for index, row in filtered_alpha_roster.iterrows():
         continue
     if row['GRADE'] == cycle or (row['GRADE'] == 'A1C' and cycle == 'SRA'):
         member_status = board_filter(row['GRADE'], year, row['DOR'], row['UIF_CODE'], row['UIF_DISPOSITION_DATE'], row['TAFMSD'], row['REENL_ELIG_STATUS'], row['CAFSC'], row['2AFSC'], row['3AFSC'], row['4AFSC'])
-        if member_status == None:
+        if member_status is None:
             continue
         elif member_status == True:
             eligible_service_members.append(index)
+        elif member_status[0] == True and member_status[1] == 'btz':
+            eligible_btz_service_members.append(index)
         elif member_status[0] == False:
             ineligible_service_members.append(index)
             reason_for_ineligible_map[index] = member_status[1]
@@ -81,6 +87,15 @@ for column in ineligible_df.columns:
     if pd.api.types.is_datetime64_any_dtype(ineligible_df[column].dtype):
         ineligible_df[column] = ineligible_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
-print(ineligible_df)
+btz_df = pdf_roster.loc[eligible_btz_service_members]
+for column in btz_df.columns:
+    if pd.api.types.is_datetime64_any_dtype(btz_df[column].dtype):
+        btz_df[column] = btz_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
-generate_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap)
+
+
+generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, year, pascodeMap, output_filename="inital_mel_roster.pdf",
+                    logo_path='images/Air_Force_Personnel_Center.png')
+
+generate_final_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap, output_filename="final_mel_roster.pdf",
+                    logo_path='images/Air_Force_Personnel_Center.png')

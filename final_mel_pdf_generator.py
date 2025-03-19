@@ -257,7 +257,7 @@ def create_final_mel_table(doc, data, header, table_type=None, count=None):
         ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
         ('ALIGN', (2, repeat_rows - 1), (2, -1), 'CENTER'),  # PASCODE
         ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
-        ('ALIGN', (4, repeat_rows - 1), (4, -1), 'LEFT'),  # UNIT
+        ('ALIGN', (4, repeat_rows - 1), (4, -1), 'CENTER'),  # UNIT
         ('ALIGN', (5, repeat_rows - 1), (8, -1), 'CENTER'),  # Checkbox columns
 
         # Vertical alignment for all cells
@@ -281,7 +281,7 @@ def create_ineligible_table(doc, data, header, table_type=None, count=None):
 
     # Column widths for ineligible table
     # Format: [NAME, GRADE, PASCODE, DAFSC, UNIT, REASON NOT ELIGIBLE]
-    col_widths = [table_width * x for x in [0.25, 0.08, 0.1, 0.1, 0.22, 0.25]]
+    col_widths = [table_width * x for x in [0.25, 0.08, 0.1, 0.1, 0.25, 0.2]]
 
     # Prepare table data
     table_data = [header] + data
@@ -317,7 +317,7 @@ def create_ineligible_table(doc, data, header, table_type=None, count=None):
         ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
         ('ALIGN', (2, repeat_rows - 1), (2, -1), 'CENTER'),  # PASCODE
         ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
-        ('ALIGN', (4, repeat_rows - 1), (4, -1), 'LEFT'),  # UNIT
+        ('ALIGN', (4, repeat_rows - 1), (4, -1), 'CENTER'),  # UNIT
         ('ALIGN', (5, repeat_rows - 1), (5, -1), 'LEFT'),  # REASON NOT ELIGIBLE
     ]
 

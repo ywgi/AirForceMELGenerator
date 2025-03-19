@@ -118,34 +118,33 @@ re_codes = {
 
 exception_hyt_start_date = datetime(2023, 12, 8)
 exception_hyt_end_date = datetime(2025, 9,30)
-' 2A333E'
 
 def cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
     if cafsc is not None and len(cafsc) >= 6:
         if cafsc[1] == '8' or cafsc[1] == '9':
             return False
-        if cafsc[4] == cafsc_map.get(grade):
+        if cafsc[4] >= cafsc_map.get(grade):
             return True
         elif isinstance(two_afsc, str) and two_afsc is not None:
             if len(two_afsc) == 6:
-                if two_afsc[4] == cafsc_map.get(grade):
+                if two_afsc[4] >= cafsc_map.get(grade):
                     return True
             elif len(two_afsc) == 5:
-                if two_afsc[3] == cafsc_map.get(grade):
+                if two_afsc[3] >= cafsc_map.get(grade):
                     return True
         elif isinstance(three_afsc, str) and three_afsc is not None:
             if len(three_afsc) == 6:
-                if three_afsc[4] == cafsc_map.get(grade):
+                if three_afsc[4] >= cafsc_map.get(grade):
                     return True
             elif len(three_afsc) == 5:
-                if three_afsc[3] == cafsc_map.get(grade):
+                if three_afsc[3] >= cafsc_map.get(grade):
                     return True
         elif isinstance(four_afsc, str) and four_afsc is not None:
             if len(four_afsc) == 6:
-                if four_afsc[4] == cafsc_map.get(grade):
+                if four_afsc[4] >= cafsc_map.get(grade):
                     return True
             elif len(four_afsc) == 5:
-                if four_afsc[3] == cafsc_map.get(grade):
+                if four_afsc[3] >= cafsc_map.get(grade):
                     return True
     return False
 
@@ -201,15 +200,14 @@ def board_filter(grade, year, date_of_rank, uif_code, uif_disposition_date, tafm
     tafmsd_required_date = formatted_tig_selection_month - relativedelta(years=TAFMSD.get(grade)-1)
     hyt_date = tafmsd + relativedelta(years=main_higher_tenure.get(grade))
     mdos = formatted_tig_selection_month + relativedelta(months=1)
+    btz_check = None
 
     if grade == 'A1C':
         eligibility_status = check_a1c_eligbility(date_of_rank, year)
         if eligibility_status == None:
             btz_check = btz_elgibility_check(date_of_rank, year)
-            if btz_check == False:
+            if not btz_check:
                 return None
-            else:
-                print('add to dataframe')
         elif eligibility_status == False:
             return False, 'Failed A1C Check.'
     if grade == 'A1C' or grade == 'AMN' or grade == 'AB':
@@ -229,4 +227,6 @@ def board_filter(grade, year, date_of_rank, uif_code, uif_disposition_date, tafm
         return False, f'{re_status}: {re_codes.get(re_status)}'
     if not cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
         return False, 'Insufficient CAFSC skill level.'
+    if btz_check is not None and btz_check == True:
+        return True, 'btz'
     return True

@@ -243,7 +243,122 @@ def create_table(doc, data, header, table_type=None, count=None):
         ('ALIGN', (2, repeat_rows), (2, -1), 'RIGHT'),  # DAS data
         ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
         ('ALIGN', (4, repeat_rows - 1), (4, repeat_rows - 1), 'CENTER'),  # UNIT header
-        ('ALIGN', (4, repeat_rows), (4, -1), 'LEFT'),  # UNIT data
+        ('ALIGN', (4, repeat_rows), (4, -1), 'CENTER'),  # UNIT data
+        ('ALIGN', (5, repeat_rows - 1), (5, repeat_rows - 1), 'CENTER'),  # DOR header
+        ('ALIGN', (5, repeat_rows), (5, -1), 'RIGHT'),  # DOR data
+        ('ALIGN', (6, repeat_rows - 1), (6, -1), 'RIGHT'),  # TAFMSD
+        ('ALIGN', (7, repeat_rows - 1), (7, -1), 'RIGHT'),  # PASCODE
+    ]
+
+    # Add status row styling if present
+    if table_type:
+        style.extend([
+            ('SPAN', (0, 0), (6, 0)),  # Span ELIGIBLE/INELIGIBLE across
+            ('ALIGN', (7, 0), (7, 0), 'RIGHT'),  # Right align the count
+        ])
+
+    table.setStyle(TableStyle(style))
+    return table
+
+def create_ineligible_table(doc, data, header, table_type=None, count=None):
+    """Create table with optional status row"""
+    table_width = doc.page_width - inch
+    col_widths = [table_width * x for x in [0.22, 0.07, 0.1, 0.08, 0.3, 0.23]]  # Adjusted last column to be wider
+
+    # Prepare table data
+    table_data = [header] + data
+    repeat_rows = 1
+
+    # Add status row if provided
+    if table_type and count is not None:
+        # For 6 columns, the status row should only have 6 cells
+        status_row = [[table_type, "", "", "", "", f"Total: {count}"]]
+        table_data = status_row + table_data
+        repeat_rows = 2
+
+    # Convert hex #17365d to RGB values (23, 54, 93)
+    dark_blue = colors.Color(23 / 255, 54 / 255, 93 / 255)
+
+    table = Table(table_data, repeatRows=repeat_rows, colWidths=col_widths)
+
+    style = [
+        # Header styling (for both status row and column headers)
+        ('BACKGROUND', (0, 0), (-1, repeat_rows - 1), dark_blue),
+        ('TEXTCOLOR', (0, 0), (-1, repeat_rows - 1), colors.white),
+        ('FONTNAME', (0, 0), (-1, repeat_rows - 1), 'Calibri-Bold'),
+        ('FONTSIZE', (0, 0), (-1, repeat_rows - 1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, repeat_rows - 1), 4),
+        ('ROWHEIGHT', (0, 0), (-1, -1), 30),
+
+        # Data rows styling
+        ('FONTNAME', (0, repeat_rows), (-1, -1), 'Calibri'),
+        ('FONTSIZE', (0, repeat_rows), (-1, -1), 10),
+        ('LINEBELOW', (0, 0), (-1, -1), .5, colors.lightgrey),
+
+        # Column alignments
+        ('ALIGN', (0, repeat_rows - 1), (0, -1), 'LEFT'),  # FULL NAME
+        ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
+        ('ALIGN', (2, repeat_rows - 1), (2, repeat_rows - 1), 'CENTER'),  # DAS header
+        ('ALIGN', (2, repeat_rows), (2, -1), 'CENTER'),  # DAS data
+        ('ALIGN', (3, repeat_rows - 1), (3, -1), 'CENTER'),  # DAFSC
+        ('ALIGN', (4, repeat_rows - 1), (4, repeat_rows - 1), 'CENTER'),  # UNIT header
+        ('ALIGN', (4, repeat_rows), (4, -1), 'CENTER'),  # UNIT data
+        ('ALIGN', (5, repeat_rows - 1), (5, repeat_rows - 1), 'LEFT'),  # DOR header
+        ('ALIGN', (5, repeat_rows), (5, -1), 'LEFT'),  # DOR data
+    ]
+
+    # Add status row styling if present
+    if table_type:
+        style.extend([
+            ('SPAN', (0, 0), (4, 0)),  # Span across first 5 columns (0-4)
+            ('ALIGN', (5, 0), (5, 0), 'RIGHT'),  # Right align the count in last column
+        ])
+
+    table.setStyle(TableStyle(style))
+    return table
+
+def create_btz_table(doc, data, header, table_type=None, count=None):
+    """Create table with optional status row"""
+    table_width = doc.page_width - inch
+    col_widths = [table_width * x for x in [0.22, 0.07, 0.1, 0.08, 0.23, 0.1, 0.1, 0.1]]
+
+    # Prepare table data
+    table_data = [header] + data
+    repeat_rows = 1
+
+    # Add status row if provided
+    if table_type and count is not None:
+        status_row = [[table_type, "", "", "", "", "", "", f"Total: {count}"]]
+        table_data = status_row + table_data
+        repeat_rows = 2
+
+    # Convert hex #17365d to RGB values (23, 54, 93)
+    dark_blue = colors.Color(23 / 255, 54 / 255, 93 / 255)
+
+    table = Table(table_data, repeatRows=repeat_rows, colWidths=col_widths)
+
+    style = [
+        # Header styling (for both status row and column headers)
+        ('BACKGROUND', (0, 0), (-1, repeat_rows - 1), dark_blue),
+        ('TEXTCOLOR', (0, 0), (-1, repeat_rows - 1), colors.white),
+        ('FONTNAME', (0, 0), (-1, repeat_rows - 1), 'Calibri-Bold'),
+        ('FONTSIZE', (0, 0), (-1, repeat_rows - 1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, repeat_rows - 1), 4),
+        ('ROWHEIGHT', (0, 0), (-1, -1), 30),
+
+        # Data rows styling
+        ('FONTNAME', (0, repeat_rows), (-1, -1), 'Calibri'),
+        ('FONTSIZE', (0, repeat_rows), (-1, -1), 10),
+        ('LINEBELOW', (0, 0), (-1, -1), .5, colors.lightgrey),
+
+        # Column alignments
+        ('ALIGN', (0, repeat_rows - 1), (0, -1), 'LEFT'),  # FULL NAME
+        ('ALIGN', (1, repeat_rows - 1), (1, -1), 'CENTER'),  # GRADE
+        ('ALIGN', (2, repeat_rows - 1), (2, repeat_rows - 1), 'CENTER'),  # DAS header
+        ('ALIGN', (2, repeat_rows), (2, -1), 'RIGHT'),  # DAS data
+        ('ALIGN', (3, repeat_rows - 1), (3, -1), 'LEFT'),  # DAFSC
+        ('ALIGN', (4, repeat_rows - 1), (4, repeat_rows - 1), 'CENTER'),  # UNIT header
+        ('ALIGN', (4, repeat_rows), (4, -1), 'CENTER'),  # UNIT data
         ('ALIGN', (5, repeat_rows - 1), (5, repeat_rows - 1), 'CENTER'),  # DOR header
         ('ALIGN', (5, repeat_rows), (5, -1), 'RIGHT'),  # DOR data
         ('ALIGN', (6, repeat_rows - 1), (6, -1), 'RIGHT'),  # TAFMSD
@@ -261,7 +376,9 @@ def create_table(doc, data, header, table_type=None, count=None):
     return table
 
 
-def generate_pascode_pdf(eligible_data, ineligible_data, cycle, melYear, pascode, pas_info,
+
+
+def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, cycle, melYear, pascode, pas_info,
                          output_filename, logo_path):
     """Generate a PDF for a single pascode"""
     doc = MilitaryRosterDocument(
@@ -282,6 +399,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, cycle, melYear, pascode
 
     elements = []
     header_row = ['FULL NAME', 'GRADE', 'DAS', 'DAFSC', 'UNIT', 'DOR', 'TAFMSD', 'PASCODE']
+    ineligible_header_row = ['FULL NAME', 'GRADE', 'PASCODE', 'DAFSC', 'UNIT', 'REASON']
 
     # Create eligible section if there are eligible records
     if eligible_data:
@@ -297,12 +415,22 @@ def generate_pascode_pdf(eligible_data, ineligible_data, cycle, melYear, pascode
     # Add page break before ineligible section
     if ineligible_data:
         elements.append(PageBreak())
-        table = create_table(
+        table = create_ineligible_table(
             doc,
             data=ineligible_data,
-            header=header_row,
+            header=ineligible_header_row,
             table_type="INELIGIBLE",
             count=len(ineligible_data)
+        )
+        elements.append(table)
+    # add btz table
+    if btz_data:
+        table = create_btz_table(
+            doc,
+            data=btz_data,
+            header=header_row,
+            table_type="BELOW THE ZONE",
+            count=len(btz_data)
         )
         elements.append(table)
 
@@ -331,22 +459,30 @@ def merge_pdfs(input_pdfs, output_pdf):
         print(f"Error writing merged PDF: {e}")
 
 
-def generate_roster_pdf(eligible_df, ineligible_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
+def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
                         logo_path='images/Air_Force_Personnel_Center.png'):
     """Generate a military roster PDF from eligible and ineligible DataFrames by creating separate PDFs for each pascode"""
 
     # Convert DataFrames to lists
     eligible_data = eligible_df.values.tolist()
-    ineligible_data = ineligible_df.values.tolist()
+    ineligible_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS', 'DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'REASON']
+    ineligible_data = ineligible_df[ineligible_columns].values.tolist()
+    btz_data = btz_df.values.tolist()
 
     # Get unique PASCODEs from both eligible and ineligible data
     unique_pascodes = set()
-    for row in eligible_data + ineligible_data:
+    for row in eligible_data:
         unique_pascodes.add(row[7])  # PASCODE is the 8th column
+    for row in ineligible_data:
+        unique_pascodes.add(row[2])
+    for row in btz_data:
+        unique_pascodes.add(row[7])
     unique_pascodes = sorted(list(unique_pascodes))
+
 
     # Create a list to store temporary PDF filenames
     temp_pdfs = []
+
 
     # Generate a separate PDF for each pascode
     for pascode in unique_pascodes:
@@ -357,7 +493,8 @@ def generate_roster_pdf(eligible_df, ineligible_df, cycle, melYear, pascode_map,
 
         # Filter data for current pascode
         pascode_eligible = [row for row in eligible_data if row[7] == pascode]
-        pascode_ineligible = [row for row in ineligible_data if row[7] == pascode]
+        pascode_ineligible = [row for row in ineligible_data if row[2] == pascode]
+        pascode_btz = [row for row in btz_data if row[7] == pascode]
 
         # Skip if there's no data for this pascode
         if not pascode_eligible and not pascode_ineligible:
@@ -386,6 +523,7 @@ def generate_roster_pdf(eligible_df, ineligible_df, cycle, melYear, pascode_map,
         temp_pdf = generate_pascode_pdf(
             pascode_eligible,
             pascode_ineligible,
+            pascode_btz,
             cycle,
             melYear,
             pascode,
