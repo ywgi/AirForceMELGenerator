@@ -73,9 +73,6 @@ for index, row in filtered_alpha_roster.iterrows():
             ineligible_service_members.append(index)
             reason_for_ineligible_map[index] = member_status[1]
 
-
-
-print(unit_total_map)
 pascodes = sorted(pascodes)
 for pascode in pascodes:
     name = input(f'Enter the name for {pascode}: ')
@@ -112,12 +109,6 @@ for index, row in eligible_df.iterrows():
         small_unit_eligible_service_members.append(index)
 
 small_unit_df = eligible_df.loc[small_unit_eligible_service_members]
-
-print(small_unit_df)
-
-
-
-small_unit_df = pdf_roster.loc[small_unit_eligible_service_members]
 
 
 generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle, year, pascodeMap, output_filename="initial_mel_roster.pdf",
