@@ -11,6 +11,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from promotion_eligible_counter import get_promotion_eligibility
 from reportlab.pdfbase.pdfmetrics import stringWidth
+import pandas as pd
 import os
 from PyPDF2 import PdfMerger
 
@@ -378,7 +379,7 @@ def create_btz_table(doc, data, header, table_type=None, count=None):
 
 
 
-def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, cycle, melYear, pascode, pas_info,
+def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_data, is_last, cycle, melYear, pascode, pas_info,
                          output_filename, logo_path):
     """Generate a PDF for a single pascode"""
     doc = MilitaryRosterDocument(
@@ -394,7 +395,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, cycle, melYea
 
     # Store additional information
     doc.logo_path = logo_path
-    doc.pas_members = [pas_info]  # Only include this pascode's info
+    # doc.pas_members = [pas_info]  # Only include this pascode's info
     doc.pas_info = pas_info  # Set directly
 
     elements = []
@@ -425,6 +426,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, cycle, melYea
         elements.append(table)
     # add btz table
     if btz_data:
+        elements.append(PageBreak())
         table = create_btz_table(
             doc,
             data=btz_data,
@@ -433,6 +435,31 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, cycle, melYea
             count=len(btz_data)
         )
         elements.append(table)
+
+    if is_last and len(small_unit_data) > 0:
+        small_unit_data = small_unit_data.values.tolist()
+        senior_rater = input('Name of Senior Rater: ')
+        senior_rater_rank = input("Rank: ")
+        senior_rater_title = input("Title: ")
+        pas_info['fd name'] = senior_rater
+        pas_info['rank'] = senior_rater_rank
+        pas_info['title'] = senior_rater_title
+        pas_info['mp'] = ''
+        pas_info['pn'] = ''
+
+        doc.pas_info = pas_info
+
+        elements.append(PageBreak())
+        table = create_table(
+            doc,
+            data=small_unit_data,
+            header=header_row,
+            table_type="SMALL UNIT",
+            count=len(small_unit_data)
+        )
+        elements.append(table)
+
+
 
     # Build PDF for this pascode
     doc.build(elements)
@@ -459,7 +486,7 @@ def merge_pdfs(input_pdfs, output_pdf):
         print(f"Error writing merged PDF: {e}")
 
 
-def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
+def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
                         logo_path='images/Air_Force_Personnel_Center.png'):
     """Generate a military roster PDF from eligible and ineligible DataFrames by creating separate PDFs for each pascode"""
 
@@ -486,6 +513,7 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pasc
 
     # Generate a separate PDF for each pascode
     for pascode in unique_pascodes:
+        is_last = False
         # Skip if this pascode is not in the pascode_map
         if pascode not in pascode_map:
             print(f"Warning: No info for pascode {pascode}, skipping")
@@ -496,6 +524,8 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pasc
         pascode_ineligible = [row for row in ineligible_data if row[2] == pascode]
         pascode_btz = [row for row in btz_data if row[7] == pascode]
 
+
+
         # Skip if there's no data for this pascode
         if not pascode_eligible and not pascode_ineligible:
             print(f"No data for pascode {pascode}, skipping")
@@ -505,6 +535,7 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pasc
         eligible_candidates = (eligible_df['ASSIGNED_PAS'] == pascode).sum()
         print(f"Creating PDF for pascode {pascode}: {eligible_candidates} eligible candidates")
         must_promote, promote_now = get_promotion_eligibility(eligible_candidates, cycle)
+
         pas_info = {
             'srid': pascode_map[pascode][3],
             'fd name': pascode_map[pascode][0],
@@ -519,11 +550,15 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pasc
         # Create temporary filename
         temp_filename = f"temp_{pascode}.pdf"
 
+        if pascode == unique_pascodes[-1]:
+            is_last = True
         # Generate PDF for this pascode
         temp_pdf = generate_pascode_pdf(
             pascode_eligible,
             pascode_ineligible,
             pascode_btz,
+            small_unit_df,
+            is_last,
             cycle,
             melYear,
             pascode,
@@ -533,6 +568,8 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, melYear, pasc
         )
 
         temp_pdfs.append(temp_pdf)
+
+
 
     # Merge all the temporary PDFs into the final output file
     if temp_pdfs:

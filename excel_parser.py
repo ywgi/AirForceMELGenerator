@@ -28,13 +28,14 @@ grade_map = {
     "SMS": "E8"
 }
 
-alpha_roster = pd.read_excel(alpha_roster_path, parse_dates=True)
+alpha_roster = pd.read_excel(test_path, parse_dates=True)
 filtered_alpha_roster = alpha_roster[required_columns + optional_columns]
 pdf_roster = filtered_alpha_roster[pdf_columns]
 valid_upload = True
 
 # cycle = input('Enter Cycle: ')
 # year = input('Enter Year: ')
+unit_total_map = {}
 cycle = 'SRA'
 year = 2025
 
@@ -62,12 +63,19 @@ for index, row in filtered_alpha_roster.iterrows():
             continue
         elif member_status == True:
             eligible_service_members.append(index)
+            if row['ASSIGNED_PAS'] in unit_total_map:
+                unit_total_map[row['ASSIGNED_PAS']] = unit_total_map[row['ASSIGNED_PAS']] + 1
+            else:
+                unit_total_map[row['ASSIGNED_PAS']] = 1
         elif member_status[0] == True and member_status[1] == 'btz':
             eligible_btz_service_members.append(index)
         elif member_status[0] == False:
             ineligible_service_members.append(index)
             reason_for_ineligible_map[index] = member_status[1]
 
+
+
+print(unit_total_map)
 pascodes = sorted(pascodes)
 for pascode in pascodes:
     name = input(f'Enter the name for {pascode}: ')
@@ -92,9 +100,27 @@ for column in btz_df.columns:
     if pd.api.types.is_datetime64_any_dtype(btz_df[column].dtype):
         btz_df[column] = btz_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
+small_unit_pascodes = []
+small_unit_eligible_service_members = []
+
+for pascode in unit_total_map:
+    if unit_total_map[pascode] < 10:
+        small_unit_pascodes.append(pascode)
+
+for index, row in eligible_df.iterrows():
+    if row['ASSIGNED_PAS'] in small_unit_pascodes:
+        small_unit_eligible_service_members.append(index)
+
+small_unit_df = eligible_df.loc[small_unit_eligible_service_members]
+
+print(small_unit_df)
 
 
-generate_roster_pdf(eligible_df, ineligible_df, btz_df, cycle, year, pascodeMap, output_filename="inital_mel_roster.pdf",
+
+small_unit_df = pdf_roster.loc[small_unit_eligible_service_members]
+
+
+generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle, year, pascodeMap, output_filename="initial_mel_roster.pdf",
                     logo_path='images/Air_Force_Personnel_Center.png')
 
 generate_final_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap, output_filename="final_mel_roster.pdf",
