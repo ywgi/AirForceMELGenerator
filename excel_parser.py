@@ -10,7 +10,7 @@ eligible_btz_service_members = []
 ineligible_service_members = []
 
 
-alpha_roster_path = rf'C:\Users\Trent\Documents\Alpha Roster.xlsx'
+alpha_roster_path = rf'C:\Users\Trent\Documents\AlphaRooster2.xlsx'
 a1c_test = rf'C:\Users\Trent\Documents\a1c_test_cases_extended.xlsx'
 test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
 required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS', 'CAFSC']
@@ -28,7 +28,7 @@ grade_map = {
     "SMS": "E8"
 }
 
-alpha_roster = pd.read_excel(test_path, parse_dates=True)
+alpha_roster = pd.read_excel(alpha_roster_path, parse_dates=True)
 filtered_alpha_roster = alpha_roster[required_columns + optional_columns]
 pdf_roster = filtered_alpha_roster[pdf_columns]
 valid_upload = True

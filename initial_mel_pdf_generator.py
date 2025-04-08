@@ -456,12 +456,6 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         senior_rater_title = input("Title: ")
         must_promote, promote_now = get_promotion_eligibility(len(small_unit_data), cycle)
 
-        pas_info['fd name'] = senior_rater
-        pas_info['rank'] = senior_rater_rank
-        pas_info['title'] = senior_rater_title
-        pas_info['mp'] = must_promote
-        pas_info['pn'] = promote_now
-
         doc2.pas_info = {
             'srid': pas_info['srid'],
             'fd name': senior_rater,
@@ -469,8 +463,8 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             'title': senior_rater_title,
             'fdid': pas_info['fdid'],
             'srid mpf': pas_info['srid mpf'],
-            'mp': '',
-            'pn': ''
+            'mp': must_promote,
+            'pn': promote_now
         }
 
         doc2.logo_path = logo_path
