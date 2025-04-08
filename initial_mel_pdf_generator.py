@@ -393,6 +393,17 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         bottomMargin=0.5 * inch
     )
 
+    doc2 = MilitaryRosterDocument(
+        output_filename,
+        cycle=cycle,
+        melYear=melYear,
+        pagesize=landscape(letter),
+        rightMargin=0.5 * inch,
+        leftMargin=0.5 * inch,
+        topMargin=0.5 * inch,
+        bottomMargin=0.5 * inch
+    )
+
     # Store additional information
     doc.logo_path = logo_path
     # doc.pas_members = [pas_info]  # Only include this pascode's info
@@ -436,6 +447,8 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         )
         elements.append(table)
 
+    doc.build(elements)
+
     if is_last and len(small_unit_data) > 0:
         small_unit_data = small_unit_data.values.tolist()
         senior_rater = input('Name of Senior Rater: ')
@@ -447,11 +460,20 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         pas_info['mp'] = ''
         pas_info['pn'] = ''
 
-        doc.pas_info = pas_info
+        doc2.pas_info = {
+            'srid': pas_info['srid'],
+            'fd name': senior_rater,
+            'rank': senior_rater_rank,
+            'title': senior_rater_title,
+            'fdid': pas_info['fdid'],
+            'srid mpf': pas_info['srid mpf'],
+            'mp': '',
+            'pn': ''
+        }
 
-        elements.append(PageBreak())
+        doc2.logo_path = logo_path
         table = create_table(
-            doc,
+            doc2,
             data=small_unit_data,
             header=header_row,
             table_type="SMALL UNIT",
@@ -459,10 +481,11 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         )
         elements.append(table)
 
+        doc2.build(elements)
+
 
 
     # Build PDF for this pascode
-    doc.build(elements)
     return output_filename
 
 
