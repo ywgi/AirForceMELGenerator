@@ -45,7 +45,7 @@ def get_accounting_date(grade, year):
 
 
 class MilitaryRosterDocument(BaseDocTemplate):
-    def __init__(self, filename, cycle=None, melYear=None, **kwargs):
+    def __init__(self, filename, cycle, melYear=None, **kwargs):
         super().__init__(filename, **kwargs)
         self.page_width, self.page_height = landscape(letter)
         self.cycle = cycle
@@ -112,9 +112,12 @@ class MilitaryRosterDocument(BaseDocTemplate):
         text_start_y = header_top - 0.1 * inch
 
         canvas.drawString(text_start_x, text_start_y, f"SRID: {doc.pas_info['srid']}")
-        canvas.drawString(text_start_x, text_start_y - line_height, f"FD NAME: {doc.pas_info['fd name']}")
-        canvas.drawString(text_start_x, text_start_y - 2 * line_height, f"FDID: {doc.pas_info['fdid']}")
-        canvas.drawString(text_start_x, text_start_y - 3 * line_height, f"SRID MPF: {doc.pas_info['srid mpf']}")
+        if self.cycle != 'SMS' and self.cycle != 'MSG':
+            canvas.drawString(text_start_x, text_start_y - line_height, f"FD NAME: {doc.pas_info['fd name']}")
+            canvas.drawString(text_start_x, text_start_y - 2 * line_height, f"FDID: {doc.pas_info['fdid']}")
+            canvas.drawString(text_start_x, text_start_y - 3 * line_height, f"SRID MPF: {doc.pas_info['srid mpf']}")
+        else:
+            canvas.drawString(text_start_x, text_start_y - line_height, f"SRID MPF: {doc.pas_info['srid mpf']}")
 
         if not doc.pas_info['pn'] == 'NA':
             # Promotion Key Title
@@ -414,7 +417,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
     ineligible_header_row = ['FULL NAME', 'GRADE', 'PASCODE', 'DAFSC', 'UNIT', 'REASON']
 
     # Create eligible section if there are eligible records
-    if eligible_data:
+    if eligible_data and len(eligible_data) != 0:
         table = create_table(
             doc,
             data=eligible_data,
@@ -423,10 +426,9 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             count=len(eligible_data)
         )
         elements.append(table)
-
-    # Add page break before ineligible section
-    if ineligible_data:
         elements.append(PageBreak())
+    # Add page break before ineligible section
+    if ineligible_data and len(ineligible_data) != 0:
         table = create_ineligible_table(
             doc,
             data=ineligible_data,
@@ -435,9 +437,9 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             count=len(ineligible_data)
         )
         elements.append(table)
-    # add btz table
-    if btz_data:
         elements.append(PageBreak())
+    # add btz table
+    if btz_data and len(btz_data) != 0:
         table = create_btz_table(
             doc,
             data=btz_data,
@@ -446,7 +448,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             count=len(btz_data)
         )
         elements.append(table)
-
+        elements.append(PageBreak())
     doc.build(elements)
 
     if is_last and len(small_unit_data) > 0:
@@ -466,6 +468,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             'mp': must_promote,
             'pn': promote_now
         }
+
 
         doc2.logo_path = logo_path
         table = create_table(
@@ -557,9 +560,9 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle
 
         pas_info = {
             'srid': pascode_map[pascode][3],
-            'fd name': pascode_map[pascode][0],
             'rank': pascode_map[pascode][1],
             'title': pascode_map[pascode][2],
+            'fd name': pascode_map[pascode][0],
             'fdid': f'{pascode_map[pascode][3]}{pascode[-4:]}',
             'srid mpf': pascode[:2],
             'mp': must_promote,

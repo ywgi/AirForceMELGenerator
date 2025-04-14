@@ -225,8 +225,9 @@ def board_filter(grade, year, date_of_rank, uif_code, uif_disposition_date, tafm
         return False, f'UIF code: {uif_code}'
     if re_status in re_codes.keys():
         return False, f'{re_status}: {re_codes.get(re_status)}'
-    if not cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
-        return False, 'Insufficient CAFSC skill level.'
+    if grade != 'SMS' or 'MSG':
+        if not cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
+            return False, 'Insufficient CAFSC skill level.'
     if btz_check is not None and btz_check == True:
         return True, 'btz'
     return True

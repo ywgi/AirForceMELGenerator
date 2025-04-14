@@ -36,7 +36,7 @@ valid_upload = True
 # cycle = input('Enter Cycle: ')
 # year = input('Enter Year: ')
 unit_total_map = {}
-cycle = 'SRA'
+cycle = 'SMS'
 year = 2025
 
 for index, row in filtered_alpha_roster.iterrows():
@@ -58,7 +58,9 @@ for index, row in filtered_alpha_roster.iterrows():
         reason_for_ineligible_map[index] = f'Projected for {cycle}.'
         continue
     if row['GRADE'] == cycle or (row['GRADE'] == 'A1C' and cycle == 'SRA'):
+        print(index, row)
         member_status = board_filter(row['GRADE'], year, row['DOR'], row['UIF_CODE'], row['UIF_DISPOSITION_DATE'], row['TAFMSD'], row['REENL_ELIG_STATUS'], row['CAFSC'], row['2AFSC'], row['3AFSC'], row['4AFSC'])
+        print(f'{index}, {row} made it past.')
         if member_status is None:
             continue
         elif member_status == True:
