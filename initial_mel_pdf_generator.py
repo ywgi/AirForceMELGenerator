@@ -449,6 +449,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
         )
         elements.append(table)
         elements.append(PageBreak())
+
     doc.build(elements)
 
     if is_last and len(small_unit_data) > 0:
@@ -475,7 +476,7 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
             doc2,
             data=small_unit_data,
             header=header_row,
-            table_type="SMALL UNIT",
+            table_type="SENIOR RATER",
             count=len(small_unit_data)
         )
         elements.append(table)

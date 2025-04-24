@@ -117,12 +117,12 @@ re_codes = {
 }
 
 exception_hyt_start_date = datetime(2023, 12, 8)
-exception_hyt_end_date = datetime(2025, 9,30)
+exception_hyt_end_date = datetime(2026, 9,30)
 
 def cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
     if cafsc is not None and len(cafsc) >= 6:
         if cafsc[1] == '8' or cafsc[1] == '9':
-            return False
+            return None
         if cafsc[4] >= cafsc_map.get(grade):
             return True
         elif isinstance(two_afsc, str) and two_afsc is not None:
@@ -185,49 +185,52 @@ def three_year_tafmsd_check(scod_as_datetime, tafmsd):
 
 
 def board_filter(grade, year, date_of_rank, uif_code, uif_disposition_date, tafmsd, re_status, cafsc, two_afsc, three_afsc, four_afsc):
-    if isinstance(date_of_rank, str):
-        date_of_rank = datetime.strptime(date_of_rank, "%d-%b-%Y")
-    if isinstance(uif_disposition_date, str):
-        uif_disposition_date = datetime.strptime(uif_disposition_date, "%d-%b-%Y")
-    if isinstance(tafmsd, str):
-        tafmsd = datetime.strptime(tafmsd, "%d-%b-%Y")
+    try:
+        if isinstance(date_of_rank, str):
+            date_of_rank = datetime.strptime(date_of_rank, "%d-%b-%Y")
+        if isinstance(uif_disposition_date, str):
+            uif_disposition_date = datetime.strptime(uif_disposition_date, "%d-%b-%Y")
+        if isinstance(tafmsd, str):
+            tafmsd = datetime.strptime(tafmsd, "%d-%b-%Y")
 
-    scod = f'{SCODs.get(grade)}-{year}'
-    scod_as_datetime = datetime.strptime(scod, "%d-%b-%Y")
-    tig_selection_month = f'{TIG.get(grade)}-{year}'
-    formatted_tig_selection_month = datetime.strptime(tig_selection_month, "%d-%b-%Y")
-    tig_eligibility_month = formatted_tig_selection_month - relativedelta(months=tig_months_required.get(grade))
-    tafmsd_required_date = formatted_tig_selection_month - relativedelta(years=TAFMSD.get(grade)-1)
-    hyt_date = tafmsd + relativedelta(years=main_higher_tenure.get(grade))
-    mdos = formatted_tig_selection_month + relativedelta(months=1)
-    btz_check = None
+        scod = f'{SCODs.get(grade)}-{year}'
+        scod_as_datetime = datetime.strptime(scod, "%d-%b-%Y")
+        tig_selection_month = f'{TIG.get(grade)}-{year}'
+        formatted_tig_selection_month = datetime.strptime(tig_selection_month, "%d-%b-%Y")
+        tig_eligibility_month = formatted_tig_selection_month - relativedelta(months=tig_months_required.get(grade))
+        tafmsd_required_date = formatted_tig_selection_month - relativedelta(years=TAFMSD.get(grade)-1)
+        hyt_date = tafmsd + relativedelta(years=main_higher_tenure.get(grade))
+        mdos = formatted_tig_selection_month + relativedelta(months=1)
+        btz_check = None
 
-    if grade == 'A1C':
-        eligibility_status = check_a1c_eligbility(date_of_rank, year)
-        if eligibility_status == None:
-            btz_check = btz_elgibility_check(date_of_rank, year)
-            if not btz_check:
-                return None
-        elif eligibility_status == False:
-            return False, 'Failed A1C Check.'
-    if grade == 'A1C' or grade == 'AMN' or grade == 'AB':
-        if three_year_tafmsd_check(scod_as_datetime, tafmsd):
-            return False, 'Over 36 months TIS.'
-    if date_of_rank > tig_eligibility_month:
-        return False, f'TIG: < {tig_months_required.get(grade)} months'
-    if tafmsd > tafmsd_required_date:
-        return False, f'TIS < {TAFMSD.get(grade)} years'
-    if exception_hyt_start_date < hyt_date < exception_hyt_end_date:
-        hyt_date += relativedelta(years=2)
-    if hyt_date < mdos:
-        return False, 'Higher tenure.'
-    if uif_code > 1 and uif_disposition_date < scod_as_datetime:
-        return False, f'UIF code: {uif_code}'
-    if re_status in re_codes.keys():
-        return False, f'{re_status}: {re_codes.get(re_status)}'
-    if grade != 'SMS' or 'MSG':
-        if not cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc):
-            return False, 'Insufficient CAFSC skill level.'
-    if btz_check is not None and btz_check == True:
-        return True, 'btz'
-    return True
+        if grade == 'A1C':
+            eligibility_status = check_a1c_eligbility(date_of_rank, year)
+            if eligibility_status == None:
+                btz_check = btz_elgibility_check(date_of_rank, year)
+                if not btz_check:
+                    return None
+            elif eligibility_status == False:
+                return False, 'Failed A1C Check.'
+        if grade == 'A1C' or grade == 'AMN' or grade == 'AB':
+            if three_year_tafmsd_check(scod_as_datetime, tafmsd):
+                return False, 'Over 36 months TIS.'
+        if date_of_rank > tig_eligibility_month:
+            return False, f'TIG: < {tig_months_required.get(grade)} months'
+        if tafmsd > tafmsd_required_date:
+            return False, f'TIS < {TAFMSD.get(grade)} years'
+        if exception_hyt_start_date < hyt_date < exception_hyt_end_date:
+            hyt_date += relativedelta(years=2)
+        if hyt_date < mdos:
+            return False, 'Higher tenure.'
+        if uif_code > 1 and uif_disposition_date < scod_as_datetime:
+            return False, f'UIF code: {uif_code}'
+        if re_status in re_codes.keys():
+            return False, f'{re_status}: {re_codes.get(re_status)}'
+        if grade != 'SMS' or 'MSG':
+            if cafsc_check(grade, cafsc, two_afsc, three_afsc, four_afsc) is False:
+                return False, 'Insufficient CAFSC skill level.'
+        if btz_check is not None and btz_check == True:
+            return True, 'btz'
+        return True
+    except Exception as e:
+        print(f"error reading file: {e}")

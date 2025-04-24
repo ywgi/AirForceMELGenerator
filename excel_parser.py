@@ -10,7 +10,7 @@ eligible_btz_service_members = []
 ineligible_service_members = []
 
 
-alpha_roster_path = rf'C:\Users\Trent\Documents\AlphaRooster2.xlsx'
+alpha_roster_path = rf'C:\Users\Trent\Downloads\Base Alpha Roster - Deleted DAS member.xlsx'
 a1c_test = rf'C:\Users\Trent\Documents\a1c_test_cases_extended.xlsx'
 test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
 required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS', 'CAFSC']
@@ -26,6 +26,14 @@ grade_map = {
     "TSG": "E6",
     "MSG": "E7",
     "SMS": "E8"
+}
+
+promotional_map = {
+    'SRA': 'SSG',
+    'SSG': 'TSG',
+    'TSG': 'MSG',
+    'MSG': 'SMS',
+    'SMS': 'CMS'
 }
 
 alpha_roster = pd.read_excel(alpha_roster_path, parse_dates=True)
@@ -57,10 +65,10 @@ for index, row in filtered_alpha_roster.iterrows():
         ineligible_service_members.append(index)
         reason_for_ineligible_map[index] = f'Projected for {cycle}.'
         continue
+    elif row['GRADE_PERM_PROJ'] == promotional_map.get(cycle):
+        continue
     if row['GRADE'] == cycle or (row['GRADE'] == 'A1C' and cycle == 'SRA'):
-        print(index, row)
         member_status = board_filter(row['GRADE'], year, row['DOR'], row['UIF_CODE'], row['UIF_DISPOSITION_DATE'], row['TAFMSD'], row['REENL_ELIG_STATUS'], row['CAFSC'], row['2AFSC'], row['3AFSC'], row['4AFSC'])
-        print(f'{index}, {row} made it past.')
         if member_status is None:
             continue
         elif member_status == True:
@@ -75,27 +83,47 @@ for index, row in filtered_alpha_roster.iterrows():
             ineligible_service_members.append(index)
             reason_for_ineligible_map[index] = member_status[1]
 
+# pascodes = sorted(pascodes)
+# for pascode in pascodes:
+#     name = input(f'Enter the name for {pascode}: ')
+#     rank = input(f'Enter rank for {name}: ')
+#     title = input(f'Enter the title for {name}: ')
+#     srid = '0R173'
+#     pascodeMap[pascode] = (name, rank, title, srid)
+
 pascodes = sorted(pascodes)
 for pascode in pascodes:
-    name = input(f'Enter the name for {pascode}: ')
-    rank = input(f'Enter rank for {name}: ')
-    title = input(f'Enter the title for {name}: ')
+    name = 'FIRST M. LAST'
+    rank = 'Rank'
+    title = 'Duty Title'
     srid = '0R173'
     pascodeMap[pascode] = (name, rank, title, srid)
 
 eligible_df = pdf_roster.loc[eligible_service_members]
 for column in eligible_df.columns:
+    if column == 'ASSIGNED_PAS_CLEARTEXT':
+        eligible_df['ASSIGNED_PAS_CLEARTEXT'] = eligible_df['ASSIGNED_PAS_CLEARTEXT'].str[:25]
+    if column == 'FULL_NAME':
+        eligible_df['FULL_NAME'] = eligible_df['FULL_NAME'].str[:25]
     if pd.api.types.is_datetime64_any_dtype(eligible_df[column].dtype):
         eligible_df[column] = eligible_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
 ineligible_df = pdf_roster.loc[ineligible_service_members].copy()
 ineligible_df['REASON'] = ineligible_df.index.map(reason_for_ineligible_map)
 for column in ineligible_df.columns:
+    if column == 'ASSIGNED_PAS_CLEARTEXT':
+        ineligible_df['ASSIGNED_PAS_CLEARTEXT'] = ineligible_df['ASSIGNED_PAS_CLEARTEXT'].str[:25]
+    if column == 'FULL_NAME':
+        ineligible_df['FULL_NAME'] = ineligible_df['FULL_NAME'].str[:25]
     if pd.api.types.is_datetime64_any_dtype(ineligible_df[column].dtype):
         ineligible_df[column] = ineligible_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
 btz_df = pdf_roster.loc[eligible_btz_service_members]
 for column in btz_df.columns:
+    if column == 'ASSIGNED_PAS_CLEARTEXT':
+        btz_df['ASSIGNED_PAS_CLEARTEXT'] = btz_df['ASSIGNED_PAS_CLEARTEXT'].str[:25]
+    if column == 'FULL_NAME':
+        btz_df['FULL_NAME'] = btz_df['FULL_NAME'].str[:25]
     if pd.api.types.is_datetime64_any_dtype(btz_df[column].dtype):
         btz_df[column] = btz_df[column].dt.strftime('%d-%b-%Y').str.upper()
 
