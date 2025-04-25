@@ -382,7 +382,7 @@ def create_btz_table(doc, data, header, table_type=None, count=None):
 
 
 
-def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_data, is_last, cycle, melYear, pascode, pas_info,
+def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_data, senior_rater_srid, senior_raters, is_last, cycle, melYear, pascode, pas_info,
                          output_filename, logo_path):
     """Generate a PDF for a single pascode"""
     doc = MilitaryRosterDocument(
@@ -415,6 +415,12 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
     elements = []
     header_row = ['FULL NAME', 'GRADE', 'DAS', 'DAFSC', 'UNIT', 'DOR', 'TAFMSD', 'PASCODE']
     ineligible_header_row = ['FULL NAME', 'GRADE', 'PASCODE', 'DAFSC', 'UNIT', 'REASON']
+
+    print(eligible_data)
+    print(ineligible_data)
+    print(btz_data)
+    print(small_unit_data.values.tolist())
+
 
     # Create eligible section if there are eligible records
     if eligible_data and len(eligible_data) != 0:
@@ -453,14 +459,15 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
     doc.build(elements)
 
     if is_last and len(small_unit_data) > 0:
-        small_unit_data = small_unit_data.values.tolist()
+        srid_df = small_unit_data[small_unit_data['ASSIGNED_PAS'].isin(senior_raters[senior_rater_srid])]
+        srid_list = srid_df.values.tolist()
         senior_rater = input('Name of Senior Rater: ')
         senior_rater_rank = input("Rank: ")
         senior_rater_title = input("Title: ")
         must_promote, promote_now = get_promotion_eligibility(len(small_unit_data), cycle)
 
         doc2.pas_info = {
-            'srid': pas_info['srid'],
+            'srid': senior_rater_srid,
             'fd name': senior_rater,
             'rank': senior_rater_rank,
             'title': senior_rater_title,
@@ -472,18 +479,21 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
 
 
         doc2.logo_path = logo_path
+
+        elements = []
+
         table = create_table(
             doc2,
-            data=small_unit_data,
+            data=srid_list,
             header=header_row,
             table_type="SENIOR RATER",
-            count=len(small_unit_data)
+            count=len(srid_list)
         )
         elements.append(table)
+        if senior_rater_srid != list(senior_raters.keys())[-1]:
+            elements.append(PageBreak())
 
         doc2.build(elements)
-
-
 
     # Build PDF for this pascode
     return output_filename
@@ -509,7 +519,7 @@ def merge_pdfs(input_pdfs, output_pdf):
         print(f"Error writing merged PDF: {e}")
 
 
-def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
+def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, senior_raters, cycle, melYear, pascode_map, output_filename="military_roster.pdf",
                         logo_path='images/Air_Force_Personnel_Center.png'):
     """Generate a military roster PDF from eligible and ineligible DataFrames by creating separate PDFs for each pascode"""
 
@@ -573,26 +583,47 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle
         # Create temporary filename
         temp_filename = f"temp_{pascode}.pdf"
 
-        if pascode == unique_pascodes[-1]:
-            is_last = True
-        # Generate PDF for this pascode
+        # Always generate this PASCODE's base document
+        senior_rater_srid = None
         temp_pdf = generate_pascode_pdf(
             pascode_eligible,
             pascode_ineligible,
             pascode_btz,
             small_unit_df,
-            is_last,
+            senior_rater_srid,
+            senior_raters,
+            is_last,  # we still signal whether this is the final pascode
             cycle,
             melYear,
             pascode,
             pas_info,
-            temp_filename,
+            f"temp_{pascode}.pdf",
             logo_path
         )
-
         temp_pdfs.append(temp_pdf)
 
+        is_last = (pascode == unique_pascodes[-1])
 
+        # Then if it’s the last pascode, trigger senior rater documents
+        if is_last:
+            for sr in senior_raters:
+                senior_rater_srid = sr
+                sr_temp_pdf = generate_pascode_pdf(
+                    [],  # no eligible
+                    [],  # no ineligible
+                    [],  # no btz
+                    small_unit_df,
+                    senior_rater_srid,
+                    senior_raters,
+                    is_last,
+                    cycle,
+                    melYear,
+                    pascode,
+                    pas_info,
+                    f"temp_{pascode}_{sr}.pdf",
+                    logo_path
+                )
+                temp_pdfs.append(sr_temp_pdf)
 
     # Merge all the temporary PDFs into the final output file
     if temp_pdfs:

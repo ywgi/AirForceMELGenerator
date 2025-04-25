@@ -12,7 +12,7 @@ ineligible_service_members = []
 
 alpha_roster_path = rf'C:\Users\Trent\Downloads\Base Alpha Roster - Deleted DAS member.xlsx'
 a1c_test = rf'C:\Users\Trent\Documents\a1c_test_cases_extended.xlsx'
-test_path = rf'C:\Users\Trent\Documents\7 Oct 2024 - Sanitized Alpha Roster.xlsx'
+test_path = rf'C:\Users\Trent\Documents\testlist.xlsx'
 required_columns = ['FULL_NAME', 'GRADE', 'ASSIGNED_PAS_CLEARTEXT', 'DAFSC', 'DOR', 'DATE_ARRIVED_STATION', 'TAFMSD','REENL_ELIG_STATUS', 'ASSIGNED_PAS', 'CAFSC']
 optional_columns = ['GRADE_PERM_PROJ', 'UIF_CODE', 'UIF_DISPOSITION_DATE', '2AFSC', '3AFSC', '4AFSC']
 pdf_columns = ['FULL_NAME','GRADE', 'DATE_ARRIVED_STATION','DAFSC', 'ASSIGNED_PAS_CLEARTEXT', 'DOR', 'TAFMSD', 'ASSIGNED_PAS']
@@ -36,7 +36,10 @@ promotional_map = {
     'SMS': 'CMS'
 }
 
-alpha_roster = pd.read_excel(alpha_roster_path, parse_dates=True)
+pascodeUnitMap = {}
+sridPascodeMap = {}
+
+alpha_roster = pd.read_excel(test_path, parse_dates=True)
 filtered_alpha_roster = alpha_roster[required_columns + optional_columns]
 pdf_roster = filtered_alpha_roster[pdf_columns]
 valid_upload = True
@@ -61,6 +64,7 @@ for index, row in filtered_alpha_roster.iterrows():
         continue
     if row['ASSIGNED_PAS'] not in pascodes:
         pascodes.append(row['ASSIGNED_PAS'])
+        pascodeUnitMap[row['ASSIGNED_PAS']] = row['ASSIGNED_PAS_CLEARTEXT']
     if row['GRADE_PERM_PROJ'] == cycle:
         ineligible_service_members.append(index)
         reason_for_ineligible_map[index] = f'Projected for {cycle}.'
@@ -83,21 +87,26 @@ for index, row in filtered_alpha_roster.iterrows():
             ineligible_service_members.append(index)
             reason_for_ineligible_map[index] = member_status[1]
 
-# pascodes = sorted(pascodes)
-# for pascode in pascodes:
-#     name = input(f'Enter the name for {pascode}: ')
-#     rank = input(f'Enter rank for {name}: ')
-#     title = input(f'Enter the title for {name}: ')
-#     srid = '0R173'
-#     pascodeMap[pascode] = (name, rank, title, srid)
-
 pascodes = sorted(pascodes)
 for pascode in pascodes:
-    name = 'FIRST M. LAST'
-    rank = 'Rank'
-    title = 'Duty Title'
-    srid = '0R173'
+    name = input(f'Enter the name for {pascode} \n unit: {pascodeUnitMap[pascode]}: ')
+    rank = input(f'Enter rank for {name}: ')
+    title = input(f'Enter the title for {name}: ')
+    srid = input(f'Enter associated SRID for {pascode} \n unit: {pascodeUnitMap[pascode]}: ')
+    if srid in sridPascodeMap:
+        sridPascodeMap[srid].append(pascode)
+    else:
+        sridPascodeMap[srid] = [pascode]
     pascodeMap[pascode] = (name, rank, title, srid)
+
+print(sridPascodeMap)
+# pascodes = sorted(pascodes)
+# for pascode in pascodes:
+#     name = 'FIRST M. LAST'
+#     rank = 'Rank'
+#     title = 'Duty Title'
+#     srid = '0R173'
+#     pascodeMap[pascode] = (name, rank, title, srid)
 
 eligible_df = pdf_roster.loc[eligible_service_members]
 for column in eligible_df.columns:
@@ -141,7 +150,7 @@ for index, row in eligible_df.iterrows():
 small_unit_df = eligible_df.loc[small_unit_eligible_service_members]
 
 
-generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, cycle, year, pascodeMap, output_filename="initial_mel_roster.pdf",
+generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, sridPascodeMap, cycle, year, pascodeMap, output_filename="initial_mel_roster.pdf",
                     logo_path='images/Air_Force_Personnel_Center.png')
 
 generate_final_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap, output_filename="final_mel_roster.pdf",
