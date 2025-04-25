@@ -89,9 +89,12 @@ for index, row in filtered_alpha_roster.iterrows():
 
 pascodes = sorted(pascodes)
 for pascode in pascodes:
-    name = input(f'Enter the name for {pascode} \n unit: {pascodeUnitMap[pascode]}: ')
-    rank = input(f'Enter rank for {name}: ')
-    title = input(f'Enter the title for {name}: ')
+    # name = input(f'Enter the name for {pascode} \n unit: {pascodeUnitMap[pascode]}: ')
+    # rank = input(f'Enter rank for {name}: ')
+    # title = input(f'Enter the title for {name}: ')
+    name = 'FIRST M. LAST'
+    rank = 'Rank'
+    title = 'Duty Title'
     srid = input(f'Enter associated SRID for {pascode} \n unit: {pascodeUnitMap[pascode]}: ')
     if srid in sridPascodeMap:
         sridPascodeMap[srid].append(pascode)
@@ -99,7 +102,7 @@ for pascode in pascodes:
         sridPascodeMap[srid] = [pascode]
     pascodeMap[pascode] = (name, rank, title, srid)
 
-print(sridPascodeMap)
+
 # pascodes = sorted(pascodes)
 # for pascode in pascodes:
 #     name = 'FIRST M. LAST'

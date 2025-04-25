@@ -416,11 +416,6 @@ def generate_pascode_pdf(eligible_data, ineligible_data, btz_data, small_unit_da
     header_row = ['FULL NAME', 'GRADE', 'DAS', 'DAFSC', 'UNIT', 'DOR', 'TAFMSD', 'PASCODE']
     ineligible_header_row = ['FULL NAME', 'GRADE', 'PASCODE', 'DAFSC', 'UNIT', 'REASON']
 
-    print(eligible_data)
-    print(ineligible_data)
-    print(btz_data)
-    print(small_unit_data.values.tolist())
-
 
     # Create eligible section if there are eligible records
     if eligible_data and len(eligible_data) != 0:
@@ -581,7 +576,6 @@ def generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, senio
         }
 
         # Create temporary filename
-        temp_filename = f"temp_{pascode}.pdf"
 
         # Always generate this PASCODE's base document
         senior_rater_srid = None
