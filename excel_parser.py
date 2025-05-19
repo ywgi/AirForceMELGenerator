@@ -2,7 +2,7 @@ import pandas as pd
 from accounting_date_check import accounting_date_check
 from board_filter import board_filter
 from initial_mel_pdf_generator import generate_roster_pdf
-from final_mel_pdf_generator import generate_final_roster_pdf
+# from final_mel_pdf_generator import generate_final_roster_pdf
 from datetime import datetime, timedelta
 
 eligible_service_members = []
@@ -156,5 +156,5 @@ small_unit_df = eligible_df.loc[small_unit_eligible_service_members]
 generate_roster_pdf(eligible_df, ineligible_df, btz_df, small_unit_df, sridPascodeMap, cycle, year, pascodeMap, output_filename="initial_mel_roster.pdf",
                     logo_path='images/Air_Force_Personnel_Center.png')
 
-generate_final_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap, output_filename="final_mel_roster.pdf",
-                    logo_path='images/Air_Force_Personnel_Center.png')
+# generate_final_roster_pdf(eligible_df, ineligible_df, cycle, year, pascodeMap, output_filename="final_mel_roster.pdf",
+#                     logo_path='images/Air_Force_Personnel_Center.png')
